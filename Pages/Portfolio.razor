@@ -1,0 +1,69 @@
+﻿@page "/"
+
+@inject HttpClient httpClient;
+@inject NavigationManager MyNavigationManager
+
+
+<div style="align-items:center">
+    <p style="text-align:center;font-size:3em;">
+        Overview of 
+        <a href="https://github.com/@username" target="_blank" rel="noopener noreferrer">
+            <b>@username</b>
+            </a>'s repos</p>
+
+
+@for(var i = 0; i < articles.Count(); i++)
+{
+    var idx = i;
+    <details onclick=@(()=>OnArticleClick(idx))>
+        <summary>
+            <div style="display: inline-block;">
+                Repo: 
+                    <b><a href=@articles[i].GetUrlNorm() target="_blank" rel="noopener noreferrer">
+                    @articles[i].name
+                    </a></b>
+            </div>
+            <div style="float:inline-end;">
+                Lang: <b>@articles[i].lang</b>
+            </div>
+            <br>
+            <div style="text-align:center; color:darkgray;">
+                Last update: @articles[i].GetDate()
+            </div>
+            <div style="font-size: 1em; text-align:justify">
+                @articles[i].desc
+            </div>
+        </summary>
+        <div style="text-align:center">
+            @((MarkupString)articles[i].readme)
+        </div>
+    </details>
+    }
+</div>
+
+
+@code{
+    [Parameter] public Models.Article[] articles { get; set; } = [];
+    [Parameter] public string username { get; set; } = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        username = MyNavigationManager.Uri.Split("//")[1].Split(".")[0];
+
+        #if DEBUG
+    username = "maloslov";
+        #endif
+
+        articles = await Models.Utils.GetAllReposDataAsync(username, httpClient);
+        var a = 0;
+    }
+
+    private async Task OnArticleClick(int idx)
+    {
+        if (articles[idx].readme.Length < 1)
+            articles = await Models.Utils.GetReadmeAsync(articles, idx, httpClient);
+
+        StateHasChanged();
+    }
+
+}
